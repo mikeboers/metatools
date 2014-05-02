@@ -6,7 +6,7 @@ setup(
     description='Python tools for Python tools.',
     url='http://github.com/westernx/metatools',
     
-    packages=find_packages('.'),
+    packages=['metatools'],
     
     author='Mike Boers',
     author_email='metatools@mikeboers.com',
