@@ -58,10 +58,16 @@ but all the dependancies that it is actually capable of, e.g.:
 
 """
 
-import __builtin__
+from __future__ import print_function
+
 import os
 import sys
 import time
+
+if sys.version_info[0] > 2:
+    from imp import reload as _reload
+else:
+    from __builtin__ import reload as _reload
 
 from . import utils
 from . import discovery
@@ -107,9 +113,9 @@ def _iter_children(module, visited=None):
         discovered_names = discovery.get_toplevel_imports(module)
         
         if _VERBOSE:
-            print '# DISCOVERY for', module.__name__
+            print('# DISCOVERY for', module.__name__)
             for name in discovered_names:
-                print '#     ', name
+                print('#     ', name)
 
         if discovered_names:
 
@@ -118,7 +124,7 @@ def _iter_children(module, visited=None):
 
             # Include anywhere on $KS_PYTHON_SITES that we could have
             # been imported from.
-            include_path.extend(x for x in os.environ.get('KS_PYTHON_SITES', '').split(':') if
+            include_path.extend(x for x in os.environ.get('KS_SITES', '').split(':') if
                 x and discovery.path_is_in_directories(path, [x])
             )
 
@@ -128,9 +134,9 @@ def _iter_children(module, visited=None):
                 discovery.path_is_in_directories(path, [x])
             )
 
-            # Finally, determime which of the discovered children are
+            # Finally, determine which of the discovered children are
             # on this path.
-            include_path = filter(None, include_path)
+            include_path = [x for x in include_path if x]
             for discovered_name in discovered_names:
                 discovered_module = sys.modules.get(discovered_name)
                 discovered_path = discovered_module and utils.get_source_path(discovered_module)
@@ -163,9 +169,9 @@ def _iter_children(module, visited=None):
         _child_lists[module.__name__] = dependencies
 
         if _VERBOSE:
-            print '# DEPENDENCIES FOR', module.__name__
+            print('# DEPENDENCIES FOR', module.__name__)
             for x in dependencies:
-                print '#    ', x.__name__
+                print('#    ', x.__name__)
 
     for child in dependencies:
         yield child
@@ -216,13 +222,13 @@ def is_outdated(module, recursive=True):
 
 def reload(module, _time=None):
     
-    print '# autoreload: Reloading: %s at 0x%x' % (module.__name__, id(module))
+    print('# autoreload: Reloading: %s at 0x%x' % (module.__name__, id(module)))
         
     state = None
     if hasattr(module, '__before_reload__'):
         state = module.__before_reload__()
         
-    __builtin__.reload(module)
+    _reload(module)
     
     # Wipe the child cache.
     _child_lists.pop(module.__name__, None)
@@ -230,7 +236,7 @@ def reload(module, _time=None):
     # Remember when it was reloaded.
     _reload_times[module.__name__] = _time or time.time()()
     if _VERBOSE:
-        print '\n'.join('%s: %s' % (t, n) for n, t in sorted(_reload_times.iteritems()))
+        print('\n'.join('%s: %s' % (t, n) for n, t in sorted(_reload_times.iteritems())))
 
     if hasattr(module, '__after_reload__'):
         module.__after_reload__(state)
@@ -251,12 +257,12 @@ def autoreload(module, visited=None, force_self=None, _depth=0, _time=None):
 
     if _VERBOSE:
         if not _depth:
-            print '# autoreload:', module.__name__
-        print '# autoreload: -->' + '  ' * _depth, module.__name__
+            print('# autoreload:', module.__name__)
+        print('# autoreload: -->' + '  ' * _depth, module.__name__)
 
     my_time = _reload_times.get(module.__name__)
     if _VERBOSE and my_time:
-        print '# autoreload: %s last reloaded at %s' % (module.__name__, my_time)
+        print('# autoreload: %s last reloaded at %s' % (module.__name__, my_time))
 
     # Give all children a chance to reload.
     child_reloaded = False
@@ -268,7 +274,7 @@ def autoreload(module, visited=None, force_self=None, _depth=0, _time=None):
             child_time = _reload_times.get(child.__name__)
             child_reloaded = child_time and (not my_time or child_time > my_time)
             if child_reloaded:
-                print '# autoreload: Child %s of %s was previously reloaded' % (child.__name__, module.__name__)
+                print('# autoreload: Child %s of %s was previously reloaded' % (child.__name__, module.__name__))
     
     # Reload ourselves if any children did, or if we are out of date.
     if force_self or child_reloaded or _is_outdated(module):

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import ast
 
@@ -44,8 +46,8 @@ def parse_imports(source, package=None, module=None, path=None, toplevel=True):
         # Discard all trailing whitespace to avoid syntax errors due to
         # too much white in the last line.
         mod_ast = ast.parse(source.rstrip())
-    except SyntaxError as e:
-        print '# %s: SyntaxError in %s: %s' % (__name__, path, e)
+    except (TypeError, SyntaxError) as e:
+        print('# %s: %s in %s: %s' % (__name__, e.__class__.__name__, path, e))
         return []
 
     for node in ast.walk(mod_ast) if not toplevel else mod_ast.body:
@@ -73,7 +75,7 @@ def path_is_in_directories(path, directories):
 
     """
 
-    a = filter(None, os.path.abspath(path)[1:].split('/'))
-    bs = [filter(None, os.path.abspath(x)[1:].split('/')) for x in directories]
+    a = [x for x in os.path.abspath(path)[1:].split('/') if x]
+    bs = [[y for y in os.path.abspath(x)[1:].split('/') if y] for x in directories]
     return any(a[:len(b)] == b for b in bs)
 
